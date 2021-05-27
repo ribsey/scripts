@@ -1,4 +1,14 @@
-import os.path as path
+#!/usr/bin/env python3
+
+# Created by Ribi Lukas (ribsey) at 25.05.2021
+
+# Description: This script extracts names from a pdf page and stores that page in a new pdf with the name as file name.
+
+# Modification:
+# Date       | Name             | Description
+# 27.05.2021 | ribsey           | resolved errors for specific files (regex1)
+
+from os import path, remove
 import re
 import warnings
 from argparse import ArgumentParser
@@ -37,6 +47,12 @@ def arguments():
                         help='path of abbreviation list', required=False)
     parser.add_argument('-d', metavar='destination', type=str,
                         help='common destination file path', required=False)
+    parser.add_argument('-i', action='store_true',
+                        help='ignores pages without names, if not specified saves it with page number in fil name',
+                        required=False)
+    parser.add_argument('-o', action='store_true',
+                        help='overwrite existing file',
+                        required=False)
     return parser.parse_args()
 
 
@@ -49,7 +65,7 @@ def getNames(src):
     """
 
     # regex for payroll capturing name and surname
-    regex1 = re.compile('(?:Herr|Frau) ([a-zA-ZäöüÄÖÜß]+) ([a-zA-ZäöüÄÖÜß]+)')
+    regex1 = re.compile('(?:Herr|Frau).*\n([a-zA-ZäöüÄÖÜß]+) ([a-zA-ZäöüÄÖÜß]+) ?([a-zA-ZäöüÄÖÜß]*)')
     # regex for donation statement capturing name and surname and if available the name of the partner
     regex2 = re.compile(
         '(?:Monatsabrechnung Spenden für )([a-zA-ZäöüÄÖÜß]+) ([a-zA-ZäöüÄÖÜß]+)( & )?(?(3)([a-zA-ZäöüÄÖÜß]+)|)')
@@ -61,36 +77,60 @@ def getNames(src):
             page = pdf.pages[i]
             pageContent = page.extract_text()
             reg = regex1.split(pageContent)
-            if len(reg) == 4:
-                names.append({
-                    'type': 'payroll',
-                    'pageNum': i,
-                    'name': reg[1],
-                    'name2': '',
-                    'surname': reg[2],
-                    'abbr': ''
-                })
-            else:
-                reg = regex2.split(pageContent)
-                if len(reg) == 6:
+            if len(reg) == 5:
+                if reg[3] == '':
+                    # single name
                     names.append({
-                        'type': 'donation',
+                        'type': 'payroll',
                         'pageNum': i,
-                        'name': reg[2],
-                        'name2': reg[4],
-                        'surname': reg[1],
-                        'abbr': ''
-                    })
-                elif len(reg) == 4:
-                    names.append({
-                        'type': 'donation',
-                        'pageNum': i,
-                        'name': reg[2],
+                        'name': reg[1],
                         'name2': '',
-                        'surname': reg[1],
+                        'surname': reg[2],
                         'abbr': ''
                     })
                 else:
+                    # two names
+                    names.append({
+                        'type': 'payroll',
+                        'pageNum': i,
+                        'name': f'{reg[1]} {reg[2]}',
+                        'name2': '',
+                        'surname': reg[3],
+                        'abbr': ''
+                    })
+            else:
+                reg = regex2.split(pageContent)
+                if len(reg) == 6:
+                    if reg[4] is not None:
+                        # couple
+                        names.append({
+                            'type': 'donation',
+                            'pageNum': i,
+                            'name': reg[2],
+                            'name2': reg[4],
+                            'surname': reg[1],
+                            'abbr': ''
+                        })
+                    elif reg[2] != '':
+                        # single person
+                        names.append({
+                            'type': 'donation',
+                            'pageNum': i,
+                            'name': reg[2],
+                            'name2': '',
+                            'surname': reg[1],
+                            'abbr': ''
+                        })
+                else:
+                    # no name found
+                    names.append({
+                        'type': 'not found',
+                        'pageNum': i,
+                        'name': '',
+                        'name2': '',
+                        'surname': '',
+                        'abbr': ''
+                    })
                     print(bcolors.WARNING + 'Could not find any name on page: ' + str(i + 1) + bcolors.ENDC)
     return names
 
@@ -118,8 +158,9 @@ def getAbbr(names, listPath):
         try:
             name['abbr'] = abbrList[s]
         except Exception as e:
-            print(bcolors.WARNING + 'Could not find abbreviation for: ' + str(e) +
-                  ' -> using full name as file name' + bcolors.ENDC)
+            if s != ' ':
+                print(bcolors.WARNING + 'Could not find abbreviation for: ' + str(e) +
+                      ' -> using full name as file name' + bcolors.ENDC)
         else:
             print('Found abbreviaton for: \'' + s + '\'')
     return names
@@ -176,34 +217,50 @@ if __name__ == '__main__':
 
     # extract names for each pdf page
     names = getNames(srcPath)
-    print(f'Names found: {len(names)}')
+    i = 0
+    for name in names:
+        if name['name'] != '':
+            i += 1
+    print(f'Names found: {i}')
 
     # get abbreviations if list available
     if abbrPath:
         names = getAbbr(names, abbrPath)
-
-        for name in names:
-            dst = srcPath[:-4] + '_' + name['abbr'] + '.pdf'
-
-            extractPages(srcPath, dst, name['pageNum'])
 
     print('')
 
     # save pages
     i = 0
     for name in names:
+        writeFile = True
         if name['abbr'] != '':
             dst = dstPath + '_' + name['abbr'] + '.pdf'
         else:
-            if name['name2'] == '':
-                dst = dstPath + '_' + name['surname'] + '_' + name['name'] + '.pdf'
+            if name['name'] == '':
+                if args.i:
+                    writeFile = False
+                else:
+                    dst = dstPath + '_' + str(name['pageNum']) + '.pdf'
             else:
-                dst = dstPath + '_' + name['surname'] + '_' + name['name'] + '_' + name['name2'] + '.pdf'
+                if name['name2'] == '':
+                    dst = dstPath + '_' + name['surname'] + '_' + name['name'].replace(' ', '_') + '.pdf'
+                else:
+                    dst = dstPath + '_' + name['surname'] + '_' + name['name'].replace(' ', '_') + '_' + \
+                          name['name2'].replace(' ', '_') + '.pdf'
 
-        i += 1
-        print('writing file: ' + dst)
-        extractPages(srcPath, dst, name['pageNum'])
-        print('finished: ' + dst)
+        if writeFile:
+            if path.isfile(dst):
+                if args.o:
+                    remove(dst)
+                else:
+                    writeFile = False
+                    print(bcolors.WARNING + 'File ' + dst + 'already exists!' + bcolors.ENDC)
+
+            if writeFile:
+                print('writing file: ' + dst)
+                extractPages(srcPath, dst, name['pageNum'])
+                print('finished: ' + dst)
+                i += 1
 
     print('')
     print(f'finished writing {i} files')
