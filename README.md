@@ -1,2 +1,2 @@
 # Scripts by ribsey
-These is a collection of some scripts I wrote.
+This is a collection of some useful scripts.
