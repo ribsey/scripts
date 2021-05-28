@@ -8,10 +8,10 @@
 # Date       | Name             | Description
 # 27.05.2021 | ribsey           | resolved errors for specific files (regex1)
 
-from os import path, remove
 import re
 import warnings
 from argparse import ArgumentParser
+from os import path, remove
 
 import pandas as pd
 import pdfplumber
@@ -65,7 +65,8 @@ def getNames(src):
     """
 
     # regex for payroll capturing name and surname
-    regex1 = re.compile('(?:Herr|Frau).*\n([a-zA-ZäöüÄÖÜß]+) ([a-zA-ZäöüÄÖÜß]+) ?([a-zA-ZäöüÄÖÜß]*)')
+    regex1 = re.compile(
+        '(Herr|Frau).*\n([a-zA-ZäöüÄÖÜß]+) ([a-zA-ZäöüÄÖÜß]+) ?([a-zA-ZäöüÄÖÜß]*)(-)?(?(5)[a-zA-ZäöüÄÖÜß]+|) +Vers')
     # regex for donation statement capturing name and surname and if available the name of the partner
     regex2 = re.compile(
         '(?:Monatsabrechnung Spenden für )([a-zA-ZäöüÄÖÜß]+) ([a-zA-ZäöüÄÖÜß]+)( & )?(?(3)([a-zA-ZäöüÄÖÜß]+)|)')
@@ -77,15 +78,15 @@ def getNames(src):
             page = pdf.pages[i]
             pageContent = page.extract_text()
             reg = regex1.split(pageContent)
-            if len(reg) == 5:
-                if reg[3] == '':
+            if len(reg) == 7:
+                if reg[4] == '':
                     # single name
                     names.append({
                         'type': 'payroll',
                         'pageNum': i,
-                        'name': reg[1],
+                        'name': reg[2],
                         'name2': '',
-                        'surname': reg[2],
+                        'surname': reg[3],
                         'abbr': ''
                     })
                 else:
@@ -93,9 +94,9 @@ def getNames(src):
                     names.append({
                         'type': 'payroll',
                         'pageNum': i,
-                        'name': f'{reg[1]} {reg[2]}',
+                        'name': f'{reg[2]} {reg[3]}',
                         'name2': '',
-                        'surname': reg[3],
+                        'surname': reg[4],
                         'abbr': ''
                     })
             else:
