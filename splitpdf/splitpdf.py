@@ -46,7 +46,7 @@ def arguments():
     parser.add_argument('-a', metavar='abbreviation-list', type=str,
                         help='path of abbreviation list', required=False)
     parser.add_argument('-d', metavar='destination', type=str,
-                        help='common destination file path', required=False)
+                        help='common destination file name or path', required=False)
     parser.add_argument('-i', action='store_true',
                         help='ignores pages without names, if not specified saves it with page number in fil name',
                         required=False)
@@ -197,23 +197,40 @@ if __name__ == '__main__':
     # process arguments
     print('')
     if args.source:
-        print('Source file: ', args.source)
         srcPath = path.expanduser(args.source)
     else:
         srcPath = ''
     if args.a:
-        print('Abbreviation list : ', args.a)
         abbrPath = path.expanduser(args.a)
     else:
         abbrPath = ''
     if args.d:
         dstPath = path.expanduser(args.d)
+        # if argument is not a directory but a file name
+        if path.dirname(dstPath) == '':
+            dstPath = path.dirname(srcPath) + '/' + path.expanduser(args.d)
     else:
         dstPath = srcPath
 
     if dstPath[-4:] == '.pdf':
         dstPath = dstPath[:-4]
-    print('Common destination file name: ', dstPath)
+
+    # check if paths are legit
+    if not path.isfile(srcPath):
+        print(bcolors.FAIL + 'No such file: ' + srcPath + bcolors.ENDC)
+        exit(1)
+    else:
+        print('Source file: ', srcPath)
+    if not path.isdir(path.dirname(dstPath)):
+        print(bcolors.FAIL + 'No such directory: ' + path.dirname(dstPath) + bcolors.ENDC)
+        exit(1)
+    else:
+        print('Common destination file name: ', dstPath)
+    if not path.isfile(abbrPath) and not abbrPath == '':
+        print(bcolors.FAIL + 'No such file: ' + abbrPath + bcolors.ENDC)
+        exit(1)
+    else:
+        print('Abbreviation list : ', args.a)
     print('')
 
     # extract names for each pdf page
@@ -255,7 +272,7 @@ if __name__ == '__main__':
                     remove(dst)
                 else:
                     writeFile = False
-                    print(bcolors.WARNING + 'File ' + dst + 'already exists!' + bcolors.ENDC)
+                    print(bcolors.WARNING + 'File \'' + dst + '\' already exists!' + bcolors.ENDC)
 
             if writeFile:
                 print('writing file: ' + dst)
