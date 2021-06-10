@@ -20,6 +20,12 @@ def get_cmdline_arguments():
         default=time.strftime("output_%Y%m%d_%H%M%S"),
         help="specify output filename (exclude .pdf extension); default is current date/time stamp"
     )
+    parser.add_option(
+        "-b", "--bookmarks",
+        dest="bookmarks",
+        default=None,
+        help="select bookmarks title per file; default is escaped; possible: filename, title"
+    )
     
     options, args = parser.parse_args()
     if len(args) < 2:
@@ -50,7 +56,15 @@ def main():
     j=0
     k=0
     for f in files_to_merge:
-        output_pdf_stream.append(f, bookmark=filenames[k])
+        if options.bookmarks == "filename":
+            output_pdf_stream.append(f, bookmark=filenames[k])
+        elif options.bookmarks == "title":
+            output_pdf_stream.append(f, bookmark=f.getDocumentInfo()['/Title'])
+        elif options.bookmarks is not None:
+            print ("invalid value for argument bookmarks", file=sys.stderr)
+            sys.exit(1)
+        else:
+            output_pdf_stream.append(f)
         #for i in range(f.numPages):
         #    output_pdf_stream.addPage(f.getPage(i))
         #    if i==0:
