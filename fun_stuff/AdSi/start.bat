@@ -1,5 +1,3 @@
-git reset --hard origin/master
-
-git pull origin master
+git checkout -f
 
 python adsi.py
