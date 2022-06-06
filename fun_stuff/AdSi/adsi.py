@@ -55,7 +55,7 @@ def openKiosk(page):
 def messageBoxHandler(style):
     if style == 18:
         button = Mbox(
-            "Ehekrise", "Es wurde eine Ehekrise entdeckt.\nWie möchted ihr mit der Ehe weiterfahren?", style)
+            "Ehekrise", "Es wurden Anzeichen einer Ehekrise entdeckt.\nWie möchted ihr mit der Ehe weiterfahren?", style)
         if button == 3:
             openKiosk("https://c.tenor.com/r7OYRTWn1C0AAAAC/kevin-hart-stare.gif")
         elif button == 4:
@@ -65,7 +65,7 @@ def messageBoxHandler(style):
                  "Hochzeits-OK wurde über euren Entscheid per SMS informiert.", 64)
     elif style == MESSAGEBOXES[1]:
         os.system(
-            '"C:\\Program Files\\IrfanView\\i_view64.exe" /capture=1 /ini=C:\\_SWdev\\VScode\\AdSi\\ /convert=' + SCREENSHOT)
+            '"C:\\Program Files\\IrfanView\\i_view64.exe" /capture=1 /ini=. /convert=' + SCREENSHOT)
         openKiosk(SCREENSHOT)
         sleep(5)
         button = Mbox("Bildschirm Fehler",
@@ -111,7 +111,8 @@ def hoursToSeconds(hours):
 
 while(1):
     try:
-        sleep(random()*10+10)
+        # Random run time between 1 and 2.5 hours
+        sleep(hoursToSeconds(random()*1.5+1))
         randomHandler(randint(0, len(UPDATES) + len(MESSAGEBOXES) - 1))
     except KeyboardInterrupt:
         break
