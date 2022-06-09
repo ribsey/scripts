@@ -4,8 +4,12 @@ import ctypes
 from random import randint, random
 from time import sleep
 
-UPDATES = ["https://fakeupdate.net/win10ue/",
-           "https://fakeupdate.net/win10/", "https://fakeupdate.net/wnc/"]
+LINKS = ["https://fakeupdate.net/win10ue/",
+         "https://fakeupdate.net/win10/", "https://fakeupdate.net/wnc/", "https://www.omfgdogs.com/#"]
+
+GIFS = {
+    "really": "https://c.tenor.com/r7OYRTWn1C0AAAAC/kevin-hart-stare.gif"
+}
 
 FIREFOX = '"\\Program Files\\Mozilla Firefox\\firefox.exe" --kiosk --new-window '
 
@@ -57,15 +61,15 @@ def messageBoxHandler(style):
         button = Mbox(
             "Ehekrise", "Es wurden Anzeichen einer Ehekrise entdeckt.\nWie möchted ihr mit der Ehe weiterfahren?", style)
         if button == 3:
-            openKiosk("https://c.tenor.com/r7OYRTWn1C0AAAAC/kevin-hart-stare.gif")
+            openKiosk(GIFS["really"])
         elif button == 4:
             Mbox("Anruf notwendig", "Ruft Claudio an.", 48)
         elif button == 5:
             Mbox("SMS gesendet",
                  "Hochzeits-OK wurde über euren Entscheid per SMS informiert.", 64)
-    elif style == MESSAGEBOXES[1]:
+    elif style == 20:
         os.system(
-            '"C:\\Program Files\\IrfanView\\i_view64.exe" /capture=1 /ini=. /convert=' + SCREENSHOT)
+            '"C:\\Program Files\\IrfanView\\i_view64.exe" /capture=1 /advancedbatch /ini=. /convert=' + SCREENSHOT)
         openKiosk(SCREENSHOT)
         sleep(5)
         button = Mbox("Bildschirm Fehler",
@@ -85,24 +89,10 @@ def messageBoxHandler(style):
 
 
 def randomHandler(nr):
-    if nr == 0:
-        openKiosk(UPDATES[0])
-    elif nr == 1:
-        openKiosk(UPDATES[1])
-    elif nr == 2:
-        openKiosk(UPDATES[2])
-    elif nr == 3:
-        messageBoxHandler(MESSAGEBOXES[0])
-    elif nr == 4:
-        messageBoxHandler(MESSAGEBOXES[1])
-    elif nr == 5:
-        messageBoxHandler(MESSAGEBOXES[2])
-    elif nr == 6:
-        messageBoxHandler(MESSAGEBOXES[3])
-    elif nr == 7:
-        messageBoxHandler(MESSAGEBOXES[4])
-    elif nr == 8:
-        messageBoxHandler(MESSAGEBOXES[5])
+    if nr >= 0 and nr < len(LINKS):
+        openKiosk(LINKS[nr])
+    elif nr < (len(LINKS) + len(MESSAGEBOXES)):
+        messageBoxHandler(MESSAGEBOXES[nr - len(LINKS)])
 
 
 def hoursToSeconds(hours):
@@ -113,6 +103,6 @@ while(1):
     try:
         # Random run time between 1 and 2.5 hours
         sleep(hoursToSeconds(random()*1.5+1))
-        randomHandler(randint(0, len(UPDATES) + len(MESSAGEBOXES) - 1))
+        randomHandler(randint(0, len(LINKS) + len(MESSAGEBOXES) - 1))
     except KeyboardInterrupt:
         break
